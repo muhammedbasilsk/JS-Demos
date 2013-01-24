@@ -1,0 +1,6 @@
+This is an application for creating a map using leaflets.
+The map have many features like markers , paths connecting states, tooltips for states and paths.
+It shows state information on hover and has a highlighting feature.
+The state information (Eg here - Population) will be displayed in a legend panel.
+Map has zoom and pan effects.
+
