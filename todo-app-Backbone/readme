@@ -1,0 +1,4 @@
+This is a demo using Backbone framework.
+App follows the backbone project structure.
+Has facilities to add to the to-do list and remove from it.
+Retains the to-do list using local storage.

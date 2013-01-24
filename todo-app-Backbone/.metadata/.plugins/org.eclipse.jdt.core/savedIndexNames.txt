@@ -1,0 +1,1 @@
+INDEX VERSION 1.126+/home/user/softwares/apache-tomcat-7.0.29/webapps/todo-app/.metadata/.plugins/org.eclipse.jdt.core
