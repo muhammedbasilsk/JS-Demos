@@ -1,0 +1,6 @@
+This demo is to add/remove a panel on a button click. 
+There are 3 buttons add,remove and removeAll.
+Add - add a new panel to the current main panel.
+Remove - remove currently added panel.
+Remove All - remove all elements from main panel.
+
