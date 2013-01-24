@@ -1,0 +1,17 @@
+{	"name":"epl",
+	 	 "children": [
+   			 {
+   			 "name":"arsenal",
+    				 "children": [
+     						 {"name": "AgglomerativeCluster", "size": 3938},
+     						 {"name": "CommunityStructure", "size": 3812},
+     						 {"name": "HierarchicalCluster", "size": 6714},
+    						 {"name": "MergeEdge",
+    						 "children": [
+								 {"name": "Henry", "size": 420},
+		 						 {"name": "Walcot", "size": 671}
+    						]
+    					}]
+  			  }]
+}
+	

@@ -1,0 +1,7 @@
+This is an application which creates a demo of 'Google -Ripples' using D3.js.
+Application has a circle packing which read data from a Json file.
+Have directed paths connecting nodes.
+It has zooming feature on click of nodes and mouse scroll.
+The ripple graph  also has pan facility.
+Each nodes has a tooltip on mouse over.
+

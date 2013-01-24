@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <link type="text/css" rel="stylesheet" href="style.css"/>
+    <style type="text/css">
+	  text {
+          font-size: 11px;
+          pointer-events: none;
+        }
+        path {
+          font-size: 11px;
+          pointer-events: none;
+          stroke:#4169E1;
+          stroke-width:4;
+          fill:none;
+          opacity:0.5;
+        }
+
+        text.parent {
+         font-size: 16px;
+         stroke:  #1f77b4;
+         fill:  #1f77b4;
+        }
+        
+
+        circle {
+          fill: #FFA500;
+          fill-opacity: .3;
+          stroke: #F88017;
+          pointer-events: all;
+        }
+
+        circle.parent {
+          fill: #E9AB17;
+          fill-opacity: .3;
+          stroke: #7E2217;
+        }
+
+        circle.parent:hover {
+          stroke: #C85A17;
+          stroke-width: 5px;
+        }
+
+        circle.child {
+          pointer-events: none;
+        }
+    </style>
+  </head>
+  <body>
+    
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script src="http://cdn.jquerytools.org/1.2.6/jquery.tools.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="d3/d3.v3.js"></script>
+    <script type="text/javascript">
+	 var w = "100%",
+            h = "100%",
+            r = 360,
+            x = d3.scale.linear().range([0, r]),
+            y = d3.scale.linear().range([0, r]),
+            node,
+            root;
+
+        var pack = d3.layout.pack().size([r, r]).value(function(d) { return d.size; })
+        d3.select("body").insert("svg:svg", "h2")
+                .attr("width", w)
+                .attr("height", h).append("svg:g")
+                .call(d3.behavior.zoom().on("zoom",zoomAndPan))
+                .append("svg:g").attr('class', 'inner-g')
+                .append('svg:defs').append('svg:marker')
+                .attr('id','head')
+                .attr('orient','auto')
+                .attr('markerWidth','2')
+                .attr('markerHeight','4')
+                .attr('refX','0.1')
+                .attr('refY','2')
+                .append('marker:polygon').attr('points','0,0 0,4 2,2').attr('fill','red');
+                
+        var vis = d3.select('g.inner-g');
+        d3.json("flare.json", function(data) {
+                node = root = data;
+                var nodes = pack.nodes(root);
+
+         vis.selectAll("circle")
+                .data(nodes)
+                .enter().append("svg:circle")
+                .attr("class", function(d) { return d.children ? "parent" : "child"; })
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; })
+                .attr("r", function(d) { return d.r; })
+                .on("click", function(d) { return zoom(d); })
+		.on("mouseover", function(d){
+			 var name = d.name;
+			 d3.select("div").remove();
+			 tooltip = d3.select("body")
+			.append("div")
+			.style("position", "absolute")
+			.style("z-index", "5")
+			.style("visibility", "true")
+			.attr('class',"tooltip")
+			.html('<div>'+name+'<table align="center" cellpadding="3"><tr><td valign="bottom" align="center">Has 				   '+d.children.length+' children</tr><table></div>');
+			return tooltip})
+		.on("mousemove", function(){
+			return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");})
+		.on("mouseout", function(){return tooltip.style("visibility", "hidden");});
+  
+        vis.selectAll("text")
+                .data(nodes)
+                .enter().append("svg:text")
+                .attr("class", function(d) { return d.children ? "parent" : "child"; })
+                .attr("x", function(d) { return d.x; })
+                .attr("y", function(d) { return d.y; })
+                .attr("dy", ".35em")
+                .attr("text-anchor", "middle")
+                .style("opacity", function(d) { return find(root, d) ? 1 : 0; })
+                .text(function(d) { return d.name; });
+
+        d3.select(window).on("click", function() { zoom(root); });
+        vis.selectAll("path").data(node.children).enter().append("svg:path")
+                .attr('d',function(d){
+                        return 'M '+node.x+' 0 Q '+(parseInt(node.x)+20)+' '+d.y/2+' '+d.x+' '+d.y})
+                .attr('marker-end','url(#head)');
+        });
+        function find(parent, child) {
+                for (var i=0; i<parent.children.length; i++)
+                { 
+                        if (parent.children[i] == child){
+                                return true;
+                        }
+                }
+                return false;
+        }
+        function zoom(d, i) {
+                var k = r / d.r / 2;
+                x.domain([d.x - d.r, d.x + d.r]);
+                y.domain([d.y - d.r, d.y + d.r]);
+                var pd = d;
+                var t = vis.transition().duration(750).delay(function(d, i) { return i * 10; });
+
+                vis.selectAll("path").remove();
+                t.selectAll("circle")
+                        .attr("cx", function(d) { return x(d.x); })
+                        .attr("cy", function(d) { return y(d.y); })
+                        .attr("r", function(d) { return k * d.r; });
+
+                t.selectAll("text")
+                        .attr("x", function(d) { return x(d.x); })
+                        .attr("y", function(d) { return y(d.y); })
+                        .style("opacity", function(d) { return find(pd, d) ? 1 : 0; })
+
+                vis.selectAll("path").data(pd.children).enter().append("svg:path")
+                        .attr('d',function(d){
+                                return 'M '+x(pd.x)+' 0 Q '+(parseInt(x(pd.x))+20)+' '+y(d.y)/2+' '+x(d.x)+' '+y(d.y)})
+                        .attr('marker-end','url(#head)');
+
+                node = d;
+                d3.event.stopPropagation();
+        }
+        
+        function zoomAndPan() {
+  		vis.attr("transform",
+                              "translate(" + d3.event.translate + ")"
+                              + " scale(" + d3.event.scale + ")");
+        }
+    </script>
+  </body>
+</html>
