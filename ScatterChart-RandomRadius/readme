@@ -1,0 +1,3 @@
+This application has a scatter chart using Sencha.
+Circles have random radius and fill color ( Implemented using renderers ).
+Each circle has a label.
