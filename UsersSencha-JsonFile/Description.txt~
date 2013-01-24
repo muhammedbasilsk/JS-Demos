@@ -1,0 +1,10 @@
+
+This application is based on 'Sencha - Ext-4.1.3.js' framework.
+App provides facility to add, edit and delete user details.
+The default values for users are saved as a Json file and details are loaded dynamically.
+Application uses Jquery datatable and has features like search, paging and filter.
+Application has a map which have markers at locations of each user and a path connecting those nodes.
+Since map uses Google maps API, it has zoom and pan effect as default.
+Uses OpenLayers JavaScript library for displaying maps.
+
+
