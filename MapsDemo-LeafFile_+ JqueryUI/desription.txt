@@ -1,0 +1,5 @@
+This application uses 'Sencha - Ext-4.1.3.js' framework.
+Uses xtype mapviews, internally uses Leaflets.
+When double click on tweet list, the corresponding location is highlighted in the map.
+Each location have markers and tooltips.
+Application uses JqueryUI for creating layouts.
