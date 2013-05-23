@@ -65,16 +65,35 @@ class ArticlesController < ApplicationController
     end
   end
   
-    # GET /articles/filter.json
-  def filter
-    @s = Post.search do
-     query { string 'obama' }
-     filter :term , :country => 'India'
+    # GET /articles/orfilter.json
+   def orfilter
+    @post = Post.search do
+      query { string 'content:why' }
+     filter :or, [
+      {:not => {:exists => {:field => :continent}}},
+      {:terms => {:continent => ['Asia','North America']} }
+    ]
     end
     respond_to do |format|
-      format.json { render json: @s }
+      format.html # new.html.erb
+      format.json { render json: @post }
     end
-  end
+    end
+
+# GET /articles/andfilter.json
+  def andfilter
+    @post = Post.search do
+     filter :and, [
+      {:terms => {:continent => ['Africa']}},
+      {:terms => {:country => ['South Sudan']} }
+    ]
+    end
+    respond_to do |format|
+      format.html # new.html.erb
+      format.json { render json: @post }
+    end
+    end
+
   
    # GET /articles/highlight.json
   def highlight
@@ -101,16 +120,34 @@ class ArticlesController < ApplicationController
    end
  end
  
+ # GET /articles/paging.json
+  def paging
+    @post = Post.search do
+      from  0
+      size 5
+      query { string 'content:why' }
+    end
+    respond_to do |format|
+      format.html # new.html.erb
+      format.json { render json: @post }
+    end
+   end
+
  # GET /articles/geo.json
   def geo
-   @s = Post.search do
-     query { string 'obama' }
-   end
-   respond_to do |format|
-     format.html # new.html.erb
-     format.json { render json: @s }
-   end
- end
+    @post = Post.search do
+    sort  { by :_geo_distance, {
+              :point => [-40, 70],
+              :order => 'asc',
+              :unit => 'km'
+    }}
+    end
+    respond_to do |format|
+      format.html # new.html.erb
+      format.json { render json: @post}
+    end
+    end
+
  
   # GET /articles/1
 

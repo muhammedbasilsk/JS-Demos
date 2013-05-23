@@ -3,9 +3,15 @@ Searchapp::Application.routes.draw do
   get "articles/sort"
   get "articles/facet"
   get "articles/filter"
+  get "articles/orfilter"
+  get "articles/andfilter"
   get "articles/highlight"
   get "articles/range"
   get "articles/fulldata"
+  get "articles/paging"
+  get "articles/geo"
+  
+  
   
   resources :articles do
     collection { get :search }
