@@ -1,4 +1,7 @@
 This is an application for creating a visualization using tree layout in D3.
 Nodes have mouse over effects.
 Visualization has zoom and pan feature.
+Added chaining of nodes and links.
+Shown hierarchy of nodes using circles.
+
 

@@ -17,7 +17,7 @@ circle{
    stroke-width: 1.5px;
 }
 
-.link {
+.link{
   fill: none;
   stroke:green;
   stroke-width: 1.5px;
@@ -50,7 +50,6 @@ var tree = d3.layout.tree()
       .separation(function(a, b) { 
 	  return (a.parent == b.parent ? 1 : 3) / a.depth; 
       });
-
 var diagonal = d3.svg.diagonal.radial()
       .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
  
@@ -65,13 +64,22 @@ var svg = d3.select("#viz").append("svg")
 d3.json("flare.json", function(error, root) {
   var nodes = tree.nodes(root),
       links = tree.links(nodes);
-
+  var hash = {};
+  nodes.filter(function(d){ hash[d.depth] =  d.y; });
+  $.each(hash,function(key,val){
+      svg.append("path")
+	.attr("d","M0,"+val+"A"+val+","+val+" 0 1,1 0,-"+val+"A"+val+","+val+" 0 1,1 0,"+val+"Z")
+	.style("stroke", "#fff")
+	.style("fill", "transparent");
+  });
   var link = svg.selectAll(".link")
       .data(links)
       .enter().append("path")
       .attr("source", function(d) {return d.source.name;})
       .attr("target", function(d) { return d.target.name ;})
       .attr("class", "link")
+      .attr("id",function(d){ return "link_"+ d.source.name + d.target.name; })
+      .attr("opacity",1e-6)
       .attr("d", diagonal);
 
   var node = svg.selectAll(".node")
@@ -81,11 +89,15 @@ d3.json("flare.json", function(error, root) {
       .attr("class", "node")
       .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
       .on("mouseover",  nodeMouseover)
+      .on("click",  nodeMouseClick)
+      .on("dblclick",  nodeMouseDblClick)
       .on("mouseout", nodeMouseout);
-
   node.append("circle")
-      .attr("r", 4.5);
-
+      .attr("r", 4.5)
+      .attr("id", function(d, id){ return "cid"+d.name; })
+      .attr("opacity",1e-6)
+      .each(appear());
+  
   d3.select('#viz')
       .append('div')
       .attr('id','tooltip')
@@ -96,11 +108,33 @@ d3.json("flare.json", function(error, root) {
       .style('border','1px solid grey')
       .style('width','300px')
       .style('opacity',0);
+
+function appear() {
+    return function(d, i, j) {
+      d.pending = 1; 
+        d3.select(this).transition()
+          .duration(150)
+          .delay(d.depth*300)
+          .attr("opacity", 1)
+          .each("end", function(d, idx) {
+             d.pending = 0;
+             var neighbors;
+             $(links).each(function(a, lnk, b) {
+               if ((lnk.source == d || lnk.target == d) && !lnk.source.pending && !lnk.target.pending) {
+                 d3.select("#link_"+ lnk.source.name + lnk.target.name).transition()
+                     .duration(150)
+                     .attr("opacity", 1);
+               }
+             });
+          });
+    };
+  }
 });
 function zoomAndPan() {
   svg.attr("transform", "translate(" + d3.event.translate + ")"+ " scale(" + d3.event.scale + ")");
 }
 function nodeMouseover(d) {
+ console.log("in mouse over");
   if(d3.select('#tooltip')[0][0].firstChild)
   	d3.select('#tooltip')[0][0].firstChild.remove();
   d3.select('#tooltip').style("opacity",1);
@@ -121,6 +155,80 @@ function nodeMouseout() {
 	.transition()
 	.duration(250)
 	.attr("r", 4.5 );
+}
+function nodeMouseDblClick(d){
+	var allNodes = d3.selectAll('circle');
+	var allLinks = d3.selectAll('path');
+	$.each(allNodes[0],function(){
+	       $(this).attr('style','opacity:1')
+	});
+	$.each(allLinks[0],function(){
+	       $(this).attr('style','opacity:1')
+	});
+	d3.event.preventDefault();
+}
+function getParents(d){
+ if (d.parent != null && d.name !== d.parent.name) {
+      return [ d.parent].concat(getParents(d.parent));
+ } else {
+    return [];
+ }
+}
+function getChildren(d){
+ if(d.children != null){
+ $.each(d.children,function(key,child){ 
+	return [child].concat(getChildren(child)); 
+	})
+ }
+}
+function nodeMouseClick(d){
+   var allNodes = d3.selectAll('circle');
+       var allLinks = d3.selectAll('path');
+       $.each(allNodes[0],function(){
+               $(this).attr('style','opacity:0')
+       });
+       $.each(allLinks[0],function(){
+               $(this).attr('style','opacity:0')
+       });
+       var nod = d;
+       child_recurr(nod);
+       parent_recurr(nod);
+       $('#cid'+$(nod).attr('name')).css("opacity","1");
+       function child_recurr(nod){
+               if(!nod.children)
+                       return false;
+               $.each(nod.children,function(){
+                       var id = $(this).attr('name');
+                       $('#cid'+$(this).attr('name')).css("opacity","1");
+                       $.each(allLinks[0],function(){
+                               if($(this).attr('source')==id || $(this).attr('target')==id)
+                                       $(this).attr('style','opacity:1')
+                       });
+                       if(this.children)
+                               child_recurr(this);
+               });
+       }
+       function parent_recurr(nod){
+                       $('#cid'+$(nod.parent).attr('name')).css("opacity","1");
+                       var id = $(nod).attr('name');
+                       $.each(allLinks[0],function(){
+                               if($(this).attr('target')==id)
+                                       $(this).attr('style','opacity:1')
+                       });
+                       if(nod.parent)
+                               parent_recurr(nod.parent);
+       }
+       d3.event.preventDefault();
+}
+function getMyNode(id){
+        var data;
+	$.each(d3.selectAll(".node")[0],function(k,d){ 
+		if (d.id == id){
+			data = d;
+			return false;
+		}
+	});
+	return data;
 }
 d3.select(self.frameElement).style("height", diameter - 150 + "px");
 </script>
