@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.node circle {
+  fill: #fff;
+  stroke: yellow;
+  stroke-width: .5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+circle{
+   fill: none;
+   stroke:white;
+   stroke-width: 1.5px;
+}
+
+.link {
+  fill: none;
+  stroke:green;
+  stroke-width: 1.5px;
+}
+body{
+  background-color: black;
+}
+.ui-slider-vertical .ui-slider-handle{
+  width: 17px !important;
+}
+.ui-widget-content {
+  width: 10px !important;
+}
+.tooltip_name{
+ color: white;
+}
+</style>
+<body>
+<div id="viz"></div>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.9.0/themes/base/jquery-ui.css" />
+<script src="http://code.jquery.com/jquery-1.8.2.js"></script>
+<script src="http://code.jquery.com/ui/1.9.0/jquery-ui.js"></script>
+<script>
+
+var diameter = 720;
+
+var tree = d3.layout.tree()
+      .size([360, diameter / 2 - 120])
+      .separation(function(a, b) { 
+	  return (a.parent == b.parent ? 1 : 3) / a.depth; 
+      });
+
+var diagonal = d3.svg.diagonal.radial()
+      .projection(function(d) { return [d.y, d.x / 180 * Math.PI]; });
+ 
+var svg = d3.select("#viz").append("svg")
+      .call(d3.behavior.zoom().on("zoom", zoomAndPan)
+      .scaleExtent([0.5,4]))
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .append("g")
+      .attr("transform", "translate("+ diameter / 2 + "," + diameter / 2 +")");
+
+d3.json("flare.json", function(error, root) {
+  var nodes = tree.nodes(root),
+      links = tree.links(nodes);
+
+  var link = svg.selectAll(".link")
+      .data(links)
+      .enter().append("path")
+      .attr("source", function(d) {return d.source.name;})
+      .attr("target", function(d) { return d.target.name ;})
+      .attr("class", "link")
+      .attr("d", diagonal);
+
+  var node = svg.selectAll(".node")
+      .data(nodes)
+      .enter().append("g")
+      .attr("id", function(d, id){ return d.name; })
+      .attr("class", "node")
+      .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
+      .on("mouseover",  nodeMouseover)
+      .on("mouseout", nodeMouseout);
+
+  node.append("circle")
+      .attr("r", 4.5);
+
+  d3.select('#viz')
+      .append('div')
+      .attr('id','tooltip')
+      .style('position', 	'absolute')
+      .style('height', 		'200px')
+      .style('left', 		'1000px')
+      .style('top','405px')
+      .style('border','1px solid grey')
+      .style('width','300px')
+      .style('opacity',0);
+});
+function zoomAndPan() {
+  svg.attr("transform", "translate(" + d3.event.translate + ")"+ " scale(" + d3.event.scale + ")");
+}
+function nodeMouseover(d) {
+  if(d3.select('#tooltip')[0][0].firstChild)
+  	d3.select('#tooltip')[0][0].firstChild.remove();
+  d3.select('#tooltip').style("opacity",1);
+  d3.select('#tooltip')
+	.append("p")
+	.text(d.name)
+	.attr("class","tooltip_name");
+  d3.select(this)
+	.select("circle")
+	.transition()
+	.duration(250)
+	.attr("r", 8);
+}
+function nodeMouseout() {
+  d3.select('#tooltip').style("opacity",0)
+  d3.select(this)
+	.select("circle")
+	.transition()
+	.duration(250)
+	.attr("r", 4.5 );
+}
+d3.select(self.frameElement).style("height", diameter - 150 + "px");
+</script>
