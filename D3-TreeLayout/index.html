@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
-
+#viz{
+  width: 1200px;
+  height: 900px;
+}
 .node circle {
   fill: #fff;
   stroke: yellow;
@@ -56,22 +59,16 @@ var diagonal = d3.svg.diagonal.radial()
 var svg = d3.select("#viz").append("svg")
       .call(d3.behavior.zoom().on("zoom", zoomAndPan)
       .scaleExtent([0.5,4]))
+      .on("dblclick.zoom", null)
       .attr("width", "100%")
       .attr("height", "100%")
       .append("g")
       .attr("transform", "translate("+ diameter / 2 + "," + diameter / 2 +")");
-
+d3.select("svg").on("dblclick.zoom", null);
 d3.json("flare.json", function(error, root) {
   var nodes = tree.nodes(root),
       links = tree.links(nodes);
-  var hash = {};
-  nodes.filter(function(d){ hash[d.depth] =  d.y; });
-  $.each(hash,function(key,val){
-      svg.append("path")
-	.attr("d","M0,"+val+"A"+val+","+val+" 0 1,1 0,-"+val+"A"+val+","+val+" 0 1,1 0,"+val+"Z")
-	.style("stroke", "#fff")
-	.style("fill", "transparent");
-  });
+ 
   var link = svg.selectAll(".link")
       .data(links)
       .enter().append("path")
@@ -81,7 +78,20 @@ d3.json("flare.json", function(error, root) {
       .attr("id",function(d){ return "link_"+ d.source.name + d.target.name; })
       .attr("opacity",1e-6)
       .attr("d", diagonal);
-
+  var hash = {};
+  nodes.filter(function(d){ hash[d.depth] =  d.y; });
+  $.each(hash,function(key,val){
+      svg.append("path")
+	.attr("class","hirerarchy")
+	.attr("d","M0,"+val+"A"+val+","+val+" 0 1,1 0,-"+val+"A"+val+","+val+" 0 1,1 0,"+val+"Z")
+	.style("stroke", "#fff")
+	.attr("opacity",1e-6)
+	.style("fill", "transparent")
+        .transition()
+ 	.duration(150)
+        .delay(key*500)
+        .attr("opacity", 1);
+  });
   var node = svg.selectAll(".node")
       .data(nodes)
       .enter().append("g")
@@ -89,14 +99,16 @@ d3.json("flare.json", function(error, root) {
       .attr("class", "node")
       .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")"; })
       .on("mouseover",  nodeMouseover)
+      .on("contextmenu",  nodeMouseContext)
       .on("click",  nodeMouseClick)
-      .on("dblclick",  nodeMouseDblClick)
       .on("mouseout", nodeMouseout);
+  
   node.append("circle")
       .attr("r", 4.5)
       .attr("id", function(d, id){ return "cid"+d.name; })
       .attr("opacity",1e-6)
       .each(appear());
+
   
   d3.select('#viz')
       .append('div')
@@ -114,7 +126,7 @@ function appear() {
       d.pending = 1; 
         d3.select(this).transition()
           .duration(150)
-          .delay(d.depth*300)
+          .delay(d.depth*500)
           .attr("opacity", 1)
           .each("end", function(d, idx) {
              d.pending = 0;
@@ -134,9 +146,8 @@ function zoomAndPan() {
   svg.attr("transform", "translate(" + d3.event.translate + ")"+ " scale(" + d3.event.scale + ")");
 }
 function nodeMouseover(d) {
- console.log("in mouse over");
   if(d3.select('#tooltip')[0][0].firstChild)
-  	d3.select('#tooltip')[0][0].firstChild.remove();
+  	$(d3.select('#tooltip')[0][0].firstChild).remove();
   d3.select('#tooltip').style("opacity",1);
   d3.select('#tooltip')
 	.append("p")
@@ -156,79 +167,56 @@ function nodeMouseout() {
 	.duration(250)
 	.attr("r", 4.5 );
 }
-function nodeMouseDblClick(d){
-	var allNodes = d3.selectAll('circle');
-	var allLinks = d3.selectAll('path');
-	$.each(allNodes[0],function(){
-	       $(this).attr('style','opacity:1')
-	});
-	$.each(allLinks[0],function(){
-	       $(this).attr('style','opacity:1')
-	});
+function nodeMouseClick(d,event,evt){
+	var allNodes = d3.selectAll('.node');
+	var allLinks = d3.selectAll(".link");
+	allNodes.style("opacity","1")
+	allLinks.style("opacity","1")
 	d3.event.preventDefault();
 }
 function getParents(d){
  if (d.parent != null && d.name !== d.parent.name) {
-      return [ d.parent].concat(getParents(d.parent));
+	if( $("#link_"+ d.name + d.parent.name).length == 1)
+	      $("#link_"+ d.name + d.parent.name).css("opacity","1");
+	else
+	  $("#link_"+ d.parent.name + d.name).css("opacity","1");
+      return [ d3.select('#'+d.parent.name)].concat(getParents(d.parent));
  } else {
     return [];
  }
 }
 function getChildren(d){
- if(d.children != null){
- $.each(d.children,function(key,child){ 
-	return [child].concat(getChildren(child)); 
-	})
- }
-}
-function nodeMouseClick(d){
-   var allNodes = d3.selectAll('circle');
-       var allLinks = d3.selectAll('path');
-       $.each(allNodes[0],function(){
-               $(this).attr('style','opacity:0')
-       });
-       $.each(allLinks[0],function(){
-               $(this).attr('style','opacity:0')
-       });
-       var nod = d;
-       child_recurr(nod);
-       parent_recurr(nod);
-       $('#cid'+$(nod).attr('name')).css("opacity","1");
-       function child_recurr(nod){
-               if(!nod.children)
-                       return false;
-               $.each(nod.children,function(){
-                       var id = $(this).attr('name');
-                       $('#cid'+$(this).attr('name')).css("opacity","1");
-                       $.each(allLinks[0],function(){
-                               if($(this).attr('source')==id || $(this).attr('target')==id)
-                                       $(this).attr('style','opacity:1')
-                       });
-                       if(this.children)
-                               child_recurr(this);
-               });
-       }
-       function parent_recurr(nod){
-                       $('#cid'+$(nod.parent).attr('name')).css("opacity","1");
-                       var id = $(nod).attr('name');
-                       $.each(allLinks[0],function(){
-                               if($(this).attr('target')==id)
-                                       $(this).attr('style','opacity:1')
-                       });
-                       if(nod.parent)
-                               parent_recurr(nod.parent);
-       }
-       d3.event.preventDefault();
-}
-function getMyNode(id){
-        var data;
-	$.each(d3.selectAll(".node")[0],function(k,d){ 
-		if (d.id == id){
-			data = d;
-			return false;
+ var node = d;
+ if (d.children != null) {
+	$.each(d.children,function(key,child){
+		if( $("#link_"+ child.name + node.name).length == 1)
+		      $("#link_"+ child.name + node.name).css("opacity","1");
+		else
+		      $("#link_"+ node.name + child.name).css("opacity","1");
+		if (child.children) {
+      			children.push(d3.select('#'+child.name));
+			getChildren(child);
 		}
+		else
+			children.push(d3.select('#'+child.name))
 	});
-	return data;
+ } 
+ return children;
+}
+function nodeMouseContext(d){
+   var allNodes = d3.selectAll('.node');
+       var allLinks = d3.selectAll('.link');
+       allNodes.style("opacity","0")
+       allLinks.style("opacity","0")
+       var nod = d;
+       $('#'+d.name).css("opacity",1);
+       var parentNodes =  getParents(nod);
+       parentNodes.forEach(function(node){ node.style("opacity",1); })
+       children = [];
+       childNodes = getChildren(nod);
+       childNodes.forEach(function(node){ $(node[0]).css("opacity",1); })
+       $('#cid'+$(nod).attr('name')).css("opacity","1");
+       d3.event.preventDefault();
 }
 d3.select(self.frameElement).style("height", diameter - 150 + "px");
 </script>
